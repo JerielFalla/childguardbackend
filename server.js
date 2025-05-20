@@ -61,7 +61,7 @@ const Report = mongoose.model("Report", reportSchema);
 app.post("/api/reports", async (req, res) => {
   try {
     const report = new Report(req.body);
-    res.json(report);
+    await report.save();
     res.status(201).json({ message: "Report submitted successfully" });
   } catch (error) {
     res
