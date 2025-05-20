@@ -62,6 +62,7 @@ app.post("/api/reports", async (req, res) => {
   try {
     const report = new Report(req.body);
     await report.save();
+    res.json(report);
     res.status(201).json({ message: "Report submitted successfully" });
   } catch (error) {
     res
