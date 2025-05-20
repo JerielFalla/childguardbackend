@@ -61,7 +61,6 @@ const Report = mongoose.model("Report", reportSchema);
 app.post("/api/reports", async (req, res) => {
   try {
     const report = new Report(req.body);
-    await report.save();
     res.json(report);
     res.status(201).json({ message: "Report submitted successfully" });
   } catch (error) {
@@ -219,6 +218,15 @@ app.get("/api/users", async (req, res) => {
   try {
     const users = await User.find();
     res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching users" });
+  }
+});
+
+app.get("/api/reports", async (req, res) => {
+  try {
+    const reports = await Report.find();
+    res.json(reports);
   } catch (error) {
     res.status(500).json({ error: "Error fetching users" });
   }
