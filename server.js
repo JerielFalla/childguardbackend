@@ -90,8 +90,8 @@ app.post("/signup", async (req, res) => {
   try {
     console.log("➡️ Signup request received:", req.body);
 
-    const { name, email, password, phone } = req.body;
-    if (!email || !password) {
+    const { name, email, password, phone, validId } = req.body;
+    if (!email || !password || !phone || !validId) {
       console.warn("Missing email or password");
       return res.status(400).json({ error: "Missing email or password" });
     }
@@ -120,6 +120,7 @@ app.post("/signup", async (req, res) => {
       email,
       password: hashedPassword,
       phone: phone,
+      validId: validId,
     });
     await user.save();
     console.log("User created successfully:", user);
