@@ -80,7 +80,7 @@ const UserSchema = new mongoose.Schema({
   role: { type: String, enum: ["admin", "user"], default: "user" },
   avatar: { type: String },
   status: { type: String, enum: ["pending", "approved"], default: "pending" },
-  validId: String,
+  validId: { type: String },
 });
 
 const User = mongoose.model("User", UserSchema);
