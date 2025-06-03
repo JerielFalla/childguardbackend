@@ -81,6 +81,7 @@ const UserSchema = new mongoose.Schema({
   avatar: { type: String },
   status: { type: String, enum: ["pending", "approved"], default: "pending" },
   validId: { type: String },
+  selfie: { type: String },
 });
 
 const User = mongoose.model("User", UserSchema);
@@ -90,8 +91,8 @@ app.post("/signup", async (req, res) => {
   try {
     console.log("➡️ Signup request received:", req.body);
 
-    const { name, email, password, phone, validId } = req.body;
-    if (!email || !password || !phone || !validId) {
+    const { name, email, password, phone, validId, selfie } = req.body;
+    if (!name || !email || !password || !phone || !validId || !selfie) {
       console.warn("Missing email or password");
       return res.status(400).json({ error: "Missing email or password" });
     }
@@ -120,7 +121,6 @@ app.post("/signup", async (req, res) => {
       email,
       password: hashedPassword,
       phone: phone,
-      validId: validId,
     });
     await user.save();
     console.log("User created successfully:", user);
