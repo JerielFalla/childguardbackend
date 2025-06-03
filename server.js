@@ -79,6 +79,8 @@ const UserSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   role: { type: String, enum: ["admin", "user"], default: "user" },
   avatar: { type: String },
+  status: { type: String, enum: ["pending", "approved"], default: "pending" },
+  validId: String,
 });
 
 const User = mongoose.model("User", UserSchema);
@@ -147,6 +149,13 @@ app.post("/login", async (req, res) => {
     if (!isMatch) {
       console.warn("❌ Password mismatch");
       return res.status(400).json({ error: "Invalid email or password" });
+    }
+
+    // 🛑 Check for 'pending' status before proceeding
+    if (user.status === "pending") {
+      return res
+        .status(403)
+        .json({ error: "Your account is pending approval" });
     }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
@@ -256,6 +265,20 @@ app.get("/api/articles", async (req, res) => {
     res.json(articles);
   } catch (error) {
     res.status(500).json({ error: "Error fetching articles" });
+  }
+});
+
+// SUBMIT VALID ID ROUTE
+app.post("/submit-id", async (req, res) => {
+  try {
+    const { userId, base64Image } = req.body;
+    await User.findByIdAndUpdate(userId, {
+      validId: base64Image,
+      status: "pending",
+    });
+    res.json({ message: "Valid ID submitted, awaiting approval" });
+  } catch (err) {
+    res.status(500).json({ error: "Error submitting ID" });
   }
 });
 
