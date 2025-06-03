@@ -121,6 +121,8 @@ app.post("/signup", async (req, res) => {
       email,
       password: hashedPassword,
       phone: phone,
+      validId: validId,
+      selfie: selfie,
     });
     await user.save();
     console.log("User created successfully:", user);
