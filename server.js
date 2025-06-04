@@ -290,6 +290,32 @@ app.post("/submit-id", async (req, res) => {
   }
 });
 
+// DELETE user from both MongoDB and Stream Chat
+app.delete("/api/users/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Delete from MongoDB
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Delete from Stream Chat
+    const streamChat = StreamChat.getInstance(
+      process.env.STREAM_API_KEY,
+      process.env.STREAM_API_SECRET
+    );
+
+    await streamChat.deleteUser(userId, { hard_delete: true });
+
+    res.json({ message: "User deleted from MongoDB and Stream Chat" });
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+
 // Start Server
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
