@@ -72,17 +72,22 @@ app.post("/api/reports", async (req, res) => {
 });
 
 // User Model
-const UserSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  phone: { type: String, required: true },
-  role: { type: String, enum: ["admin", "user"], default: "user" },
-  avatar: { type: String },
-  status: { type: String, enum: ["pending", "approved"], default: "pending" },
-  validId: { type: String },
-  selfie: { type: String },
-});
+const UserSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    phone: { type: String, required: true },
+    role: { type: String, enum: ["admin", "user"], default: "user" },
+    avatar: { type: String },
+    status: { type: String, enum: ["pending", "approved"], default: "pending" },
+    validId: { type: String },
+    selfie: { type: String },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 const User = mongoose.model("User", UserSchema);
 
