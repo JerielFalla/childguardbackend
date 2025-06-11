@@ -36,6 +36,7 @@ const reportSchema = new mongoose.Schema({
   natureOfAbuse: String,
   descriptionOfIncident: String,
   location: String,
+  reporterName: String,
   reporterPhone: String,
   victimName: String,
   victimAge: String,
