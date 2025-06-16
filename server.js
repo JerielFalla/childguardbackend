@@ -84,6 +84,8 @@ const UserSchema = new mongoose.Schema(
     status: { type: String, enum: ["pending", "approved"], default: "pending" },
     validId: { type: String },
     selfie: { type: String },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   {
     timestamps: true,
@@ -314,6 +316,74 @@ app.delete("/api/users/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting user:", error);
     res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+
+// Forgot Password
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user)
+      return res
+        .status(404)
+        .json({ message: "User not found with that email" });
+
+    const token = crypto.randomBytes(20).toString("hex");
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    const resetUrl = `https://your-app-url.com/reset/${token}`;
+
+    const mailOptions = {
+      to: user.email,
+      from: process.env.EMAIL_USERNAME,
+      subject: "Password Reset",
+      text: `You requested a password reset. Click the link to set a new password:\n\n${resetUrl}`,
+    };
+
+    transporter.sendMail(mailOptions, (err) => {
+      if (err) return res.status(500).json({ message: "Email failed to send" });
+      res.status(200).json({ message: "Reset email sent successfully" });
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.post("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!user)
+      return res.status(400).json({ message: "Invalid or expired token" });
+
+    const hashed = await bcrypt.hash(password, 10);
+    user.password = hashed;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: "Password has been reset successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
