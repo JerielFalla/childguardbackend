@@ -9,6 +9,8 @@ const API_URL = "https://childguardbackend.vercel.app";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const { StreamChat } = require("stream-chat");
 
 // Middleware
@@ -345,7 +347,7 @@ app.post("/forgot-password", async (req, res) => {
       },
     });
 
-    const resetUrl = `${API_URL}/reset/${token}`;
+    const resetUrl = `${API_URL}/reset-password/${token}`;
 
     const mailOptions = {
       to: user.email,
