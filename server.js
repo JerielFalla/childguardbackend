@@ -5,6 +5,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 
+const API_URL = "https://childguardbackend.vercel.app";
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 const { StreamChat } = require("stream-chat");
@@ -343,7 +345,7 @@ app.post("/forgot-password", async (req, res) => {
       },
     });
 
-    const resetUrl = `https://your-app-url.com/reset/${token}`;
+    const resetUrl = `${API_URL}/reset/${token}`;
 
     const mailOptions = {
       to: user.email,
