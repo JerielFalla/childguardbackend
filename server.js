@@ -347,7 +347,7 @@ app.post("/forgot-password", async (req, res) => {
       },
     });
 
-    const resetUrl = `${API_URL}/go-reset?token=${token}`;
+    const resetUrl = `https://childguard.vercel.app/reset/${token}`;
 
     const mailOptions = {
       to: user.email,
