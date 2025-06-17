@@ -347,13 +347,16 @@ app.post("/forgot-password", async (req, res) => {
       },
     });
 
-    const resetUrl = `childguard://reset-password?token=${token}`;
+    const resetUrl = `${API_URL}/go-reset?token=${token}`;
 
     const mailOptions = {
       to: user.email,
       from: process.env.EMAIL_USERNAME,
       subject: "Password Reset",
-      text: `You requested a password reset. Click the link to set a new password:\n\n${resetUrl}`,
+      html: `You requested a password reset.<br><br>
+Click <a href="${resetUrl}">here</a> to reset your password.<br><br>
+Or copy and paste this into your browser:<br>
+${resetUrl}`,
     };
 
     transporter.sendMail(mailOptions, (err) => {
@@ -389,6 +392,32 @@ app.post("/reset-password/:token", async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: "Internal server error" });
   }
+});
+
+// Redirect route for deep linking
+app.get("/go-reset", (req, res) => {
+  const token = req.query.token;
+  if (!token) {
+    return res.status(400).send("Token missing");
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Redirecting...</title>
+      <meta http-equiv="refresh" content="0;url=childguard://reset-password?token=${token}" />
+    </head>
+    <body>
+      <p>Redirecting to app...</p>
+      <script>
+        window.location.href = "childguard://reset-password?token=${token}";
+      </script>
+    </body>
+    </html>
+  `;
+
+  res.send(html);
 });
 
 // Start Server
