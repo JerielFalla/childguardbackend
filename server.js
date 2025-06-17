@@ -347,7 +347,7 @@ app.post("/forgot-password", async (req, res) => {
       },
     });
 
-    const resetUrl = `${API_URL}/reset-password/${token}`;
+    const resetUrl = `childguard://reset-password?token=${token}`;
 
     const mailOptions = {
       to: user.email,
