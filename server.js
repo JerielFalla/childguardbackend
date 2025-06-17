@@ -347,18 +347,19 @@ app.post("/forgot-password", async (req, res) => {
       },
     });
 
-    const resetUrl = `https://childguard.vercel.app/reset/${token}`;
+    const resetUrl = `childguard://reset/${token}`;
 
     const mailOptions = {
       to: user.email,
       from: process.env.EMAIL_USERNAME,
       subject: "Password Reset",
-      html: `You requested a password reset.<br><br>
-Click <a href="${resetUrl}">here</a> to reset your password.<br><br>
-Or copy and paste this into your browser:<br>
-${resetUrl}`,
+      html: `
+    You requested a password reset.<br><br>
+    Click <a href="${resetUrl}">here</a> to reset your password.<br><br>
+    Or copy and paste this into your browser:<br>
+    ${resetUrl}
+  `,
     };
-
     transporter.sendMail(mailOptions, (err) => {
       if (err) return res.status(500).json({ message: "Email failed to send" });
       res.status(200).json({ message: "Reset email sent successfully" });
