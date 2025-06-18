@@ -12,7 +12,6 @@ const PORT = process.env.PORT || 5000;
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { StreamChat } = require("stream-chat");
-const { DateHeader } = require("stream-chat-react-native-core");
 
 // Middleware
 app.use(express.json({ limit: "10mb" }));
