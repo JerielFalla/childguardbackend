@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 5000;
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { StreamChat } = require("stream-chat");
+const { DateHeader } = require("stream-chat-react-native-core");
 
 // Middleware
 app.use(express.json({ limit: "10mb" }));
@@ -88,8 +89,8 @@ const UserSchema = new mongoose.Schema(
     status: { type: String, enum: ["pending", "approved"], default: "pending" },
     validId: { type: String },
     selfie: { type: String },
-    resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date },
+    resetCode: { type: String },
+    resetCodeExpires: { type: Date },
   },
   {
     timestamps: true,
@@ -324,101 +325,72 @@ app.delete("/api/users/:id", async (req, res) => {
 });
 
 // Forgot Password
-app.post("/forgot-password", async (req, res) => {
+app.post("/request-reset", async (req, res) => {
   const { email } = req.body;
+  const user = await User.findOne({ email });
 
-  try {
-    const user = await User.findOne({ email });
-    if (!user)
-      return res
-        .status(404)
-        .json({ message: "User not found with that email" });
+  if (!user)
+    return res
+      .status(404)
+      .json({ success: false, message: "User not found with that email" });
 
-    const token = crypto.randomBytes(20).toString("hex");
-    user.resetPasswordToken = token;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-    await user.save();
-
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
-      },
+  if (user.resetCodeExpires && user.resetCodeExpires > Date.now()) {
+    return res.status(429).json({
+      success: false,
+      message: "Please wait before requesting a new code.",
     });
-
-    const resetUrl = `childguard://reset/${token}`;
-
-    const mailOptions = {
-      to: user.email,
-      from: process.env.EMAIL_USERNAME,
-      subject: "Password Reset",
-      html: `
-    You requested a password reset.<br><br>
-    Click <a href="${resetUrl}">here</a> to reset your password.<br><br>
-    Or copy and paste this into your browser:<br>
-    ${resetUrl}
-  `,
-    };
-    transporter.sendMail(mailOptions, (err) => {
-      if (err) return res.status(500).json({ message: "Email failed to send" });
-      res.status(200).json({ message: "Reset email sent successfully" });
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Internal server error" });
   }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+  user.resetCode = code;
+  user.resetCodeExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+  await user.save();
+
+  const transporter = nodemailer.createTransport({
+    service: "Gmail",
+    auth: {
+      user: process.env.EMAIL_USERNAME,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+  });
+
+  const mailOptions = {
+    to: email,
+    from: process.env.EMAIL_USERNAME,
+    subject: "Your ChildGuard Reset Code",
+    html: `<h3>Your reset code is: <b>${code}</b></h3><p>It expires in 10 minutes.</p>`,
+  };
+
+  transporter.sendMail(mailOptions, (err) => {
+    if (err) return res.status(500).json({ message: "Failed to send email" });
+    res
+      .status(200)
+      .json({ success: true, message: "Reset code sent to email" });
+  });
 });
 
-app.post("/reset-password/:token", async (req, res) => {
-  const { token } = req.params;
-  const { password } = req.body;
+app.post("/verify-reset", async (req, res) => {
+  const { email, code, password } = req.body;
 
-  try {
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() },
-    });
+  const user = await User.findOne({ email });
 
-    if (!user)
-      return res.status(400).json({ message: "Invalid or expired token" });
-
-    const hashed = await bcrypt.hash(password, 10);
-    user.password = hashed;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-
-    await user.save();
-
-    res.status(200).json({ message: "Password has been reset successfully" });
-  } catch (err) {
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-// Redirect route for deep linking
-app.get("/go-reset", (req, res) => {
-  const token = req.query.token;
-  if (!token) {
-    return res.status(400).send("Token missing");
+  if (!user || user.resetCode !== code || user.resetCodeExpires < Date.now()) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid or expired code" });
   }
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Redirecting...</title>
-      <meta http-equiv="refresh" content="0;url=childguard://reset-password?token=${token}" />
-    </head>
-    <body>
-      <p>Redirecting to app...</p>
-      <script>
-        window.location.href = "childguard://reset-password?token=${token}";
-      </script>
-    </body>
-    </html>
-  `;
+  if (user.resetCodeExpires < Date.now())
+    return res.status(400).json({ message: "Code expired" });
 
-  res.send(html);
+  user.password = await bcrypt.hash(password, 10);
+  user.resetCode = undefined;
+  user.resetCodeExpires = undefined;
+  await user.save();
+
+  res
+    .status(200)
+    .json({ success: true, message: "Password reset successfully" });
 });
 
 // Start Server
