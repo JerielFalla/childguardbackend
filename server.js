@@ -107,8 +107,18 @@ app.post("/signup", async (req, res) => {
   try {
     console.log("➡️ Signup request received:", req.body);
 
-    const { name, email, password, phone, validId, selfie } = req.body;
-    if (!name || !email || !password || !phone || !validId || !selfie) {
+    const { name, email, password, phone, age, gender, validId, selfie } =
+      req.body;
+    if (
+      !name ||
+      !email ||
+      !password ||
+      !phone ||
+      !age ||
+      !gender ||
+      !validId ||
+      !selfie
+    ) {
       console.warn("Missing email or password");
       return res.status(400).json({ error: "Missing email or password" });
     }
@@ -137,6 +147,8 @@ app.post("/signup", async (req, res) => {
       email,
       password: hashedPassword,
       phone: phone,
+      age: age,
+      gender: gender,
       validId: validId,
       selfie: selfie,
     });
